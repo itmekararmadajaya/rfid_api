@@ -26,13 +26,24 @@ Route::post("/1", function(Request $request){
 
     if($validator->fails()){
         Log::info("Falidation Failed");
+        return response()->json([
+            'status' => false,
+            'message' => 'Validation error',
+            'errors' => $validator->errors()
+        ], 422);
     }else {
         $rfid_data = new RfidData();
         $rfid_data->client_type = $request['ClientType'];
         $rfid_data->tag_no = $request['TagNo'];
         $rfid_data->reader_no = $request['ReaderNo'];
         $rfid_data->save();
-        
+
         Log::info("Data Stored");
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Succcess create new data',
+            'data' => $rfid_data->toJson()
+        ], 200);
     }
 });
