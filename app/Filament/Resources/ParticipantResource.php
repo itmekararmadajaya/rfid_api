@@ -27,6 +27,7 @@ class ParticipantResource extends Resource
                 Section::make([
                     Forms\Components\TextInput::make('tag_no')
                         ->required()
+                        ->unique(ignoreRecord: true)
                         ->maxLength(255),
                     Forms\Components\TextInput::make('name')
                         ->required()
