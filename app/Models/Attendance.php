@@ -11,7 +11,8 @@ class Attendance extends Model
         'participant_id',
         'check_in',
         'reader_no',
-        'client_type'
+        'client_type',
+        'is_new'
     ];
 
     public function participant(): BelongsTo {

@@ -8,7 +8,9 @@ use Illuminate\Http\Request;
 
 class DisplayAbsenceController extends Controller
 {
-    public function index(){
-        return view('display-absence.index');
+    public function index(string $reader_no){
+        return view('display-absence.index', [
+            'reader_no' => $reader_no
+        ]);
     }
 }

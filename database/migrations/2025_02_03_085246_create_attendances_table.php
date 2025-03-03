@@ -18,6 +18,7 @@ return new class extends Migration
             $table->dateTime('check_in');
             $table->string('reader_no');
             $table->string('client_type');
+            $table->boolean('is_new'); //absencec new or duplicate
             $table->timestamps();
         });
     }

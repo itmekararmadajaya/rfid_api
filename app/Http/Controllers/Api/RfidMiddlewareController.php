@@ -104,8 +104,8 @@ class RfidMiddlewareController extends Controller
         }
     }
 
-    public function acs(Request $request){
-        $delay = 0;
+    public function acs(Request $request, string $reader_no){
+        $delay = 1;
         Log::info("Success HIT from reader ACS");
         Log::info("Data from reader", $request->toArray());
         foreach($request->toArray() as $req){
@@ -117,27 +117,31 @@ class RfidMiddlewareController extends Controller
                 $check_attendance = Attendance::where('participant_id', $get_participant->id)->where('check_in', '>=', Carbon::now()->subMinutes($delay))->exists();
                 
                 if(!$check_attendance){
+                    $check_dupliacte_attendance_today = Attendance::where('participant_id', $get_participant->id)->wherebetween('check_in', [Carbon::today()->startOfDay(), Carbon::today()->endOfDay()])->exists();
+
                     /**
                      * Store data absensi
                      */
                     $absence = new Attendance;
                     $absence->participant_id = $get_participant->id;
                     $absence->check_in = Carbon::now();
-                    $absence->reader_no = '1';
-                    $absence->client_type = 'asd';
+                    $absence->reader_no = $reader_no;
+                    $absence->client_type = '';
+                    $absence->is_new = $check_dupliacte_attendance_today ? false : true;
                     $absence->save();
+
+                    $send_data = array_merge($get_participant->toArray(), [
+                        'source' => 'reader',
+                        'is_new' => $absence->is_new,
+                    ]);
 
                     Log::info("Success add new data");
 
                     try {
-                        /**
-                         * Mengirim broadcast ke websocket
-                         */
-                        broadcast(new RfidMiddlewareEvent($get_participant->toArray()));
+                        broadcast(new RfidMiddlewareEvent($send_data, $reader_no));
                         Log::info("Success broadcast data");
                     } catch (\Throwable $th) {
-                        Log::info($th->getMessage());
-                        Log::info("Failed broadcast data");
+                        Log::info("Failed broadcast data " . $th->getMessage());
                     }
                 }else{
                     Log::info("User has already attendance");
@@ -146,25 +150,66 @@ class RfidMiddlewareController extends Controller
         }
     }
 
-    public function getLatestAttendance($count){
+    public function getLatestAttendance($count, $reader_no){
         $getAttendance = Attendance::selectRaw("MAX(id) as id, participant_id, MAX(check_in) as check_in")
-                ->groupBy('participant_id')
+                ->where('attendances.reader_no', $reader_no)
                 ->whereDate('check_in', Carbon::today())
+                ->groupBy('participant_id')
                 ->orderByDesc('check_in')
                 ->skip(1)
                 ->take($count)
                 ->get()
-                ->pluck('participant_id');
-        $participants = Participant::select("id", "tag_no", "name", "mandarin_name", "position", "city", "table_no")->whereIn('id', $getAttendance)->get();
+                ->pluck('id');
+        
+        $participants = Attendance::select("attendances.id", "attendances.check_in", "attendances.is_new", "participants.tag_no", "participants.name", "participants.mandarin_name", "participants.position", "participants.city", "participants.table_no", "attendances.reader_no")
+                ->leftJoin('participants', 'participants.id', 'attendances.participant_id')
+                ->whereIn('attendances.id', $getAttendance)
+                ->get();
+
         echo json_encode($participants);
     }
 
-    public function getCountAttendanceToday(){
+    public function getCountAttendanceToday($reader_no){
         $attendanceToday = Attendance::selectRaw("MAX(id) as id, participant_id, MAX(check_in) as check_in")
+                ->where('attendances.reader_no', $reader_no)
                 ->groupBy('participant_id')
                 ->whereDate('check_in', Carbon::today())
                 ->get();
 
         echo count($attendanceToday);
+    }
+
+    public function checkAttendance(){
+        $get_participants = Participant::get();
+
+        foreach($get_participants as $key => $get_participant){
+                    $absence = new Attendance;
+                    $absence->participant_id = $get_participant->id;
+                    $absence->check_in = Carbon::now();
+                    $absence->reader_no = $key % 2 == 0 ? '1' : '2';
+                    $absence->client_type = '';
+                    $absence->is_new = true;
+                    $absence->save();
+
+                    $send_data = array_merge($get_participant->toArray(), [
+                        'source' => 'reader',
+                        'is_new' => $absence->is_new,
+                    ]);
+
+                    // broadcast(new RfidMiddlewareEvent($send_data, $absence->reader_no));
+
+                    sleep(1);
+
+                    if($key != 0 && $key % 5 == 0){
+                        sleep(2);
+                    }
+                    Log::info($key);
+                    
+                    if($key == 4){
+                        break;
+                    }
+        }
+
+        return response()->json($get_participant);
     }
 }

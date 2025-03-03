@@ -10,6 +10,7 @@ use Filament\Forms\Components\Section;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -30,19 +31,14 @@ class ParticipantResource extends Resource
                         ->unique(ignoreRecord: true)
                         ->maxLength(255),
                     Forms\Components\TextInput::make('name')
-                        ->required()
                         ->maxLength(255),
                     Forms\Components\TextInput::make('mandarin_name')
-                        ->required()
                         ->maxLength(255),
                     Forms\Components\TextInput::make('position')
-                        ->required()
                         ->maxLength(255),
                     Forms\Components\TextInput::make('city')
-                        ->required()
                         ->maxLength(255),
                     Forms\Components\TextInput::make('table_no')
-                        ->required()
                         ->maxLength(255),
                 ])->columns(2)
             ]);
@@ -78,6 +74,9 @@ class ParticipantResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Action::make('manual_absence')->color('secondary')->url(fn(Participant $record) => route('filament.admin.pages.manual-absence', [
+                    'id' => $record->id   
+                ]))
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

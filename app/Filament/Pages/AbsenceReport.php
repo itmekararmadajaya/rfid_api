@@ -46,6 +46,7 @@ class AbsenceReport extends Page implements HasTable, HasForms
                 TextColumn::make('participant_name'),
                 TextColumn::make('participant_tag_no'),
                 TextColumn::make('check_in'),
+                TextColumn::make('is_new'),
                 TextColumn::make('reader_no'),
             ])
             ->filters([

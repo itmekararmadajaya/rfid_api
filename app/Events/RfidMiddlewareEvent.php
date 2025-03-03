@@ -17,13 +17,15 @@ class RfidMiddlewareEvent implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $data;
+    public $reader_no;
 
     /**
      * Create a new event instance.
      */
-    public function __construct($data)
+    public function __construct($data, $reader_no)
     {
         $this->data = $data;
+        $this->reader_no = $reader_no;
     }
 
     /**
@@ -34,6 +36,6 @@ class RfidMiddlewareEvent implements ShouldBroadcastNow
     public function broadcastOn()
     {
 
-        return (new Channel('rfid-middleware'));
+        return (new Channel('rfid-middleware-reader-' . $this->reader_no));
     }
 }
