@@ -2,11 +2,13 @@
 
 namespace App\Filament\Pages;
 
+use App\Exports\AbsenceExport;
 use App\Models\Attendance;
 use Closure;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
@@ -18,6 +20,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AbsenceReport extends Page implements HasTable, HasForms
 {
@@ -28,6 +31,8 @@ class AbsenceReport extends Page implements HasTable, HasForms
 
     protected static string $view = 'filament.pages.absence-report';
 
+    public $date_start, $date_end;
+
     public function mount(){
 
     }
@@ -37,6 +42,13 @@ class AbsenceReport extends Page implements HasTable, HasForms
             ->headerActions([
                 Action::make("flush")->requiresConfirmation()->action(function(){
                     return Attendance::query()->delete();
+                }),
+                Action::make('Export')->color('success')->action(function() {
+                    if(empty($this->date_start) || empty($this->date_end)){
+                        Notification::make()->title('Please select date start and date end')->danger()->send();
+                        return;
+                    }
+                    return Excel::download(new AbsenceExport($this->date_start, $this->date_end), 'Absence-report-fuqingmgl.xlsx');
                 })
             ])
             ->query(Attendance::
@@ -51,18 +63,24 @@ class AbsenceReport extends Page implements HasTable, HasForms
             ])
             ->filters([
                 Filter::make('date_form')->form([
-                    DatePicker::make('created_from'),
-                    DatePicker::make('created_until'),
+                    DatePicker::make('date_start'),
+                    DatePicker::make('date_end'),
                 ])
                 ->query(function (Builder $query, array $data) {
                     return $query
                         ->when(
-                            $data['created_from'],
-                            fn (Builder $query, $date): Builder => $query->whereDate('attendances.created_at', '>=', $date),
+                            $data['date_start'],
+                            function (Builder $query, $date): Builder {
+                                $this->date_start = $date;
+                                return $query->whereDate('attendances.created_at', '>=', $date);
+                            },
                         )
                         ->when(
-                            $data['created_until'],
-                            fn (Builder $query, $date): Builder => $query->whereDate('attendances.created_at', '<=', $date),
+                            $data['date_end'],
+                            function (Builder $query, $date): Builder {
+                                $this->date_end = $date;
+                                return $query->whereDate('attendances.created_at', '<=', $date);
+                            },
                         );
                 })
             ], layout: FiltersLayout::AboveContent)

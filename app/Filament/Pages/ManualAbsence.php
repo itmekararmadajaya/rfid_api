@@ -27,7 +27,7 @@ class ManualAbsence extends Page
         $this->participant = Participant::where('id', $id)->first();
     }
 
-    public function absence()
+    public function absence($reader_no)
     {
         $delay = 0;
 
@@ -42,7 +42,7 @@ class ManualAbsence extends Page
             $absence = new Attendance();
             $absence->participant_id = $this->participant->id;
             $absence->check_in = Carbon::now();
-            $absence->reader_no = '';
+            $absence->reader_no = $reader_no;
             $absence->client_type = '';
             $absence->is_new = $check_dupliacte_attendance_today ? false : true;
             $absence->save();
@@ -56,7 +56,7 @@ class ManualAbsence extends Page
                 /**
                  * Mengirim broadcast ke websocket
                  */
-                broadcast(new RfidMiddlewareEvent($send_data));
+                broadcast(new RfidMiddlewareEvent($send_data, $reader_no));
 
                 Notification::make()
                 ->title('Success manual absence')

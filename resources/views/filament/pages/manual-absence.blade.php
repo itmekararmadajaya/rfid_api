@@ -61,8 +61,11 @@
             </tbody>
         </table>
         <div style="padding-top: 12px">
-            <x-filament::button color="success" wire:click="absence">
-                Absence
+            <x-filament::button color="success" wire:click="absence(1)">
+                Absence From Reader 1
+            </x-filament::button>
+            <x-filament::button color="success" wire:click="absence(2)">
+                Absence From Reader 2
             </x-filament::button>
             <a href="{{route('filament.admin.resources.participants.index')}}">
                 <x-filament::button color="gray">

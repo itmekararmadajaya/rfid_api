@@ -54,7 +54,7 @@ class RfidMiddlewareController extends Controller
                     /**
                      * Mengirim broadcast ke websocket
                      */
-                    broadcast(new RfidMiddlewareEvent($get_participant->toArray()));
+                    broadcast(new RfidMiddlewareEvent($get_participant->toArray(), 1),);
                     Log::info("Success broadcast data");
                 } catch (\Throwable $th) {
                     Log::info("Failed broadcast data");
@@ -191,7 +191,7 @@ class RfidMiddlewareController extends Controller
                     $absence->is_new = true;
                     $absence->save();
 
-                    $send_data = array_merge($get_participant->toArray(), [
+                    $send_data = array_merge($get_participant, [
                         'source' => 'reader',
                         'is_new' => $absence->is_new,
                     ]);
